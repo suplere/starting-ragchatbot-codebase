@@ -22,6 +22,21 @@ uv sync
 ANTHROPIC_API_KEY=your_api_key_here
 ```
 
+### Code Quality Tools
+```bash
+# Run all quality checks (format, lint, test)
+./scripts/quality.sh
+
+# Format code only (Black + isort)
+./scripts/format.sh
+
+# Manual commands
+black backend/ main.py              # Format with Black
+isort backend/ main.py --profile black  # Sort imports
+flake8 backend/ main.py --max-line-length=88  # Lint code
+python -m pytest backend/tests/    # Run tests
+```
+
 ### Development URLs
 - Web Interface: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
