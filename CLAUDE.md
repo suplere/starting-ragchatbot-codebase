@@ -26,6 +26,11 @@ ANTHROPIC_API_KEY=your_api_key_here
 - Web Interface: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
 
+### API Endpoints
+- `POST /api/query` - Process course queries with session management
+- `GET /api/courses` - Get course statistics and titles
+- `POST /api/new-chat` - Create new chat session for fresh conversations
+
 ## Architecture Overview
 
 This is a **RAG (Retrieval-Augmented Generation) system** for course materials with a clean separation between frontend, backend, and RAG processing.
@@ -82,6 +87,7 @@ User Query → FastAPI → RAG System → AI Generator (Claude) → Search Tools
 - Session ID management for conversation continuity
 - Real-time loading states with message streaming
 - Course analytics dashboard
+- '+ NEW CHAT' button for starting fresh conversations without page reload
 
 ### Configuration
 
@@ -99,3 +105,4 @@ Documents are processed into structured objects:
 - `CourseChunk`: Content, metadata, indexing info
 
 Course titles serve as unique identifiers for deduplication and organization.
+- Udělej poznámku o změnách

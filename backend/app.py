@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Union
 import os
 
 from config import config
@@ -40,16 +40,25 @@ class QueryRequest(BaseModel):
     query: str
     session_id: Optional[str] = None
 
+class SourceData(BaseModel):
+    """Model for source data with optional links"""
+    text: str
+    link: Optional[str] = None
+
 class QueryResponse(BaseModel):
     """Response model for course queries"""
     answer: str
-    sources: List[str]
+    sources: List[Union[str, SourceData]]  # Support both old (string) and new (structured) formats
     session_id: str
 
 class CourseStats(BaseModel):
     """Response model for course statistics"""
     total_courses: int
     course_titles: List[str]
+
+class NewChatResponse(BaseModel):
+    """Response model for new chat session creation"""
+    session_id: str
 
 # API Endpoints
 
@@ -65,9 +74,22 @@ async def query_documents(request: QueryRequest):
         # Process query using RAG system
         answer, sources = rag_system.query(request.query, session_id)
         
+        # Convert sources to proper format
+        formatted_sources = []
+        for source in sources:
+            if isinstance(source, dict) and 'text' in source:
+                # New structured format
+                formatted_sources.append(SourceData(
+                    text=source['text'],
+                    link=source.get('link')
+                ))
+            else:
+                # Legacy string format
+                formatted_sources.append(source)
+        
         return QueryResponse(
             answer=answer,
-            sources=sources,
+            sources=formatted_sources,
             session_id=session_id
         )
     except Exception as e:
@@ -82,6 +104,15 @@ async def get_course_stats():
             total_courses=analytics["total_courses"],
             course_titles=analytics["course_titles"]
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/new-chat", response_model=NewChatResponse)
+async def create_new_chat():
+    """Create a new chat session"""
+    try:
+        session_id = rag_system.session_manager.create_session()
+        return NewChatResponse(session_id=session_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

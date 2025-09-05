@@ -245,6 +245,49 @@ header h1 {
     color: var(--text-secondary);
 }
 
+/* Sources list styling */
+.sources-list {
+    margin: 0;
+    padding-left: 1rem;
+    list-style-type: disc;
+}
+
+.sources-list li {
+    margin: 0.25rem 0;
+    line-height: 1.4;
+}
+
+/* Source links styling */
+.source-link {
+    color: #60a5fa; /* Lighter blue that's readable on dark background */
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.source-link:hover {
+    color: #93c5fd; /* Even lighter on hover */
+    text-decoration: underline;
+    border-bottom-color: #60a5fa;
+}
+
+.source-link:focus {
+    outline: none;
+    color: #93c5fd;
+    text-decoration: underline;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+    border-radius: 2px;
+}
+
+.source-link:visited {
+    color: #a78bfa; /* Purple tint for visited links */
+}
+
+.source-link:visited:hover {
+    color: #c4b5fd;
+}
+
 /* Markdown formatting styles */
 .message-content h1,
 .message-content h2,
@@ -599,6 +642,40 @@ details[open] .suggested-header::before {
     color: var(--text-secondary);
     font-style: italic;
     text-transform: none;
+}
+
+/* New Chat Button */
+.new-chat-button {
+    width: 100%;
+    padding: 0.5rem 0;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: inherit;
+}
+
+.new-chat-button:focus {
+    outline: none;
+    color: var(--primary-color);
+}
+
+.new-chat-button:hover {
+    color: var(--primary-color);
+}
+
+.new-chat-button::before {
+    content: '+';
+    display: inline-block;
+    margin-right: 0.5rem;
+    transition: transform 0.2s ease;
+    font-size: 0.75rem;
 }
 
 /* Suggested Questions in Sidebar */
