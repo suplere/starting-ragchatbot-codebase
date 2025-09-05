@@ -1,8 +1,10 @@
 import os
 import sys
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
+from typing import Generator
 
 import pytest
+from fastapi.testclient import TestClient
 
 # Add parent directory to sys.path to import backend modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -204,3 +206,144 @@ def mock_anthropic_client_sequential():
 def test_config():
     """Test configuration"""
     return config
+
+
+# API Testing Fixtures
+
+@pytest.fixture
+def mock_rag_system():
+    """Mock RAG system for API testing"""
+    mock = Mock()
+    
+    # Mock session manager
+    mock_session_manager = Mock()
+    mock_session_manager.create_session.return_value = "test-session-123"
+    mock.session_manager = mock_session_manager
+    
+    # Mock query method
+    mock.query.return_value = (
+        "This is a test response about MCP concepts.",
+        [{"text": "Sample source content", "link": "https://example.com/lesson1"}]
+    )
+    
+    # Mock course analytics
+    mock.get_course_analytics.return_value = {
+        "total_courses": 3,
+        "course_titles": ["Introduction to MCP", "Advanced MCP", "MCP Best Practices"]
+    }
+    
+    return mock
+
+@pytest.fixture
+def test_app(mock_rag_system) -> Generator[TestClient, None, None]:
+    """Create test FastAPI app with mocked dependencies"""
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+    from typing import List, Optional, Union
+    
+    # Create test app (avoiding static file mount issues)
+    app = FastAPI(title="Test Course Materials RAG System")
+    
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    # Import models from the actual app
+    from app import QueryRequest, QueryResponse, CourseStats, NewChatResponse, SourceData
+    
+    # Add API endpoints with mocked RAG system
+    @app.post("/api/query", response_model=QueryResponse)
+    async def query_documents(request: QueryRequest):
+        try:
+            session_id = request.session_id or mock_rag_system.session_manager.create_session()
+            answer, sources = mock_rag_system.query(request.query, session_id)
+            
+            formatted_sources = []
+            for source in sources:
+                if isinstance(source, dict) and 'text' in source:
+                    formatted_sources.append(SourceData(
+                        text=source['text'],
+                        link=source.get('link')
+                    ))
+                else:
+                    formatted_sources.append(source)
+            
+            return QueryResponse(
+                answer=answer,
+                sources=formatted_sources,
+                session_id=session_id
+            )
+        except Exception as e:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/courses", response_model=CourseStats)
+    async def get_course_stats():
+        try:
+            analytics = mock_rag_system.get_course_analytics()
+            return CourseStats(
+                total_courses=analytics["total_courses"],
+                course_titles=analytics["course_titles"]
+            )
+        except Exception as e:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/new-chat", response_model=NewChatResponse)
+    async def create_new_chat():
+        try:
+            session_id = mock_rag_system.session_manager.create_session()
+            return NewChatResponse(session_id=session_id)
+        except Exception as e:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/")
+    async def read_root():
+        return {"message": "Course Materials RAG System"}
+    
+    with TestClient(app) as client:
+        yield client
+
+@pytest.fixture
+def sample_query_request():
+    """Sample query request for API testing"""
+    return {
+        "query": "What is MCP and how does it work?",
+        "session_id": "test-session-123"
+    }
+
+@pytest.fixture
+def sample_query_request_no_session():
+    """Sample query request without session ID"""
+    return {
+        "query": "Explain the basics of MCP implementation"
+    }
+
+@pytest.fixture
+def expected_query_response():
+    """Expected query response structure"""
+    return {
+        "answer": "This is a test response about MCP concepts.",
+        "sources": [
+            {
+                "text": "Sample source content",
+                "link": "https://example.com/lesson1"
+            }
+        ],
+        "session_id": "test-session-123"
+    }
+
+@pytest.fixture
+def expected_course_stats():
+    """Expected course statistics response"""
+    return {
+        "total_courses": 3,
+        "course_titles": ["Introduction to MCP", "Advanced MCP", "MCP Best Practices"]
+    }
