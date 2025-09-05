@@ -109,6 +109,7 @@ class VectorStore:
             
             if results['documents'][0] and results['metadatas'][0]:
                 # Return the title (which is now the ID)
+                # Query results have metadatas as list of lists, so need double indexing
                 return results['metadatas'][0][0]['title']
         except Exception as e:
             print(f"Error resolving course name: {e}")
