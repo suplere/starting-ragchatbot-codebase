@@ -142,6 +142,43 @@ def mock_anthropic_client_with_tools():
     return mock
 
 @pytest.fixture
+def mock_anthropic_client_sequential():
+    """Mock Anthropic API client that demonstrates sequential tool calling"""
+    mock = Mock()
+    
+    # Mock first round - tool use
+    mock_round1_response = Mock()
+    mock_tool_content1 = Mock()
+    mock_tool_content1.type = "tool_use"
+    mock_tool_content1.name = "get_course_outline"
+    mock_tool_content1.input = {"course_title": "MCP Basics"}
+    mock_tool_content1.id = "tool_call_round1"
+    
+    mock_round1_response.content = [mock_tool_content1]
+    mock_round1_response.stop_reason = "tool_use"
+    
+    # Mock second round - another tool use
+    mock_round2_response = Mock()
+    mock_tool_content2 = Mock()
+    mock_tool_content2.type = "tool_use"
+    mock_tool_content2.name = "search_course_content"
+    mock_tool_content2.input = {"query": "lesson 4 content"}
+    mock_tool_content2.id = "tool_call_round2"
+    
+    mock_round2_response.content = [mock_tool_content2]
+    mock_round2_response.stop_reason = "tool_use"
+    
+    # Mock final response without tool use
+    mock_final_response = Mock()
+    mock_final_response.content = [Mock(text="Based on both searches, here's the comprehensive answer")]
+    mock_final_response.stop_reason = "end_turn"
+    
+    # Set up side effects for multiple API calls
+    mock.messages.create.side_effect = [mock_round1_response, mock_round2_response, mock_final_response]
+    
+    return mock
+
+@pytest.fixture
 def test_config():
     """Test configuration"""
     return config
